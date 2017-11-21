@@ -1,32 +1,35 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Torret.h"
-
+#include "Turret.h"
+#include "Components/SkeletalMeshComponent.h"
 
 // Sets default values
-ATorret::ATorret()
+ATurret::ATurret()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	TurretMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("TurretMesh"));
+	RootComponent = TurretMesh;
+	TurretMesh->SetSimulatePhysics(true);
 }
 
 // Called when the game starts or when spawned
-void ATorret::BeginPlay()
+void ATurret::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
 // Called every frame
-void ATorret::Tick(float DeltaTime)
+void ATurret::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 }
 
 // Called to bind functionality to input
-void ATorret::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ATurret::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 

@@ -4,21 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "Torret.generated.h"
+#include "Turret.generated.h"
 
 UCLASS()
-class SCORYBALL_API ATorret : public APawn
+class SCORYBALL_API ATurret : public APawn
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this pawn's properties
-	ATorret();
+	ATurret();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class USkeletalMeshComponent* TurretMesh;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

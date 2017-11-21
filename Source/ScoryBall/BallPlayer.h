@@ -30,6 +30,13 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	/** Jump Impulse Strength*/
+	UPROPERTY(EditDefaultsOnly, Category=Movement)
+	float m_JumpPower;
+
+	/** Forward and Right Force */
+	UPROPERTY(EditDefaultsOnly, Category=Movement)
+	float m_TorquePower;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -40,5 +47,12 @@ public:
 private:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
-	
+	void Jump();
+
+	float m_MoveForwardAxisValue;
+	float m_MoveRightAxisValue;
+
+	void UpdateBallMovement();
+
+	bool IsGrounded();
 };
