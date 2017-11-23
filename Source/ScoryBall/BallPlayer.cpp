@@ -3,10 +3,14 @@
 #include "BallPlayer.h"
 #include "Components/InputComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Engine/CollisionProfile.h"
 #include "Engine/Engine.h"
 #include "ScoryBall.h"
+#include "Battery.h"
+
 // Sets default values
 ABallPlayer::ABallPlayer()
 {
@@ -16,12 +20,18 @@ ABallPlayer::ABallPlayer()
 	BallMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BallMesh"));
 	RootComponent = BallMesh;
 	BallMesh->SetSimulatePhysics(true);
-	BallMesh->SetLinearDamping(1.0f);
+	BallMesh->SetLinearDamping(0.5f);
 	BallMesh->SetAngularDamping(0.1f);
-	
+	BallMesh->SetWorldScale3D(FVector(0.25f));
+
+	//SphereTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere Trigger"));
+	//SphereTrigger->SetupAttachment(BallMesh);
+	//SphereTrigger->SetCollisionProfileName("OverlapAll");
+	//SphereTrigger->SetSphereRadius(28.0f);
+
 	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraArm"));
 	CameraSpringArm->SetupAttachment(RootComponent);
-	CameraSpringArm->TargetArmLength = 1000.0f;
+	CameraSpringArm->TargetArmLength = 300.0f;
 	CameraSpringArm->SetRelativeRotation(FRotator(320.0f, 0.0f, 0.0f));
 	CameraSpringArm->bUsePawnControlRotation = true;
 	CameraSpringArm->bInheritPitch = false;
@@ -31,17 +41,16 @@ ABallPlayer::ABallPlayer()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	Camera->SetupAttachment(CameraSpringArm, USpringArmComponent::SocketName);
 
-	m_TorquePower = 130000.0f;
-	m_JumpPower = 7000.0f;
+	m_TorquePower = 13000.0f;
+	m_JumpPower = 4000.0f;
+	m_CurrentHealthPoints =	m_MaxHealthPoints = 100.0f;
+	m_EnergyCounter = 0;
 }
 
 // Called when the game starts or when spawned
 void ABallPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogBall, Warning, TEXT("Hello: %s"), *GetNameSafe(this));
-
-
 
 }
 
@@ -60,6 +69,31 @@ void ABallPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	InputComponent->BindAxis("MoveForward", this, &ABallPlayer::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &ABallPlayer::MoveRight);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &ABallPlayer::Jump);
+}
+
+float ABallPlayer::TakeDamage(float DamageAmount, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
+{
+	if (m_CurrentHealthPoints > 0)
+	{
+		m_CurrentHealthPoints -= DamageAmount;
+		if (m_CurrentHealthPoints < 0)
+		{
+			m_CurrentHealthPoints = 0;
+			return DamageAmount + m_CurrentHealthPoints;
+		}
+		return DamageAmount;
+	}
+	return 0.0;
+}
+
+void ABallPlayer::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	ABattery* Battery = Cast<ABattery>(OtherActor);
+	if (Battery)
+	{
+		Battery->PickUp();
+		m_EnergyCounter++;
+	}
 }
 
 void ABallPlayer::MoveForward(float Value)

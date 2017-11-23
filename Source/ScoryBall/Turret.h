@@ -30,8 +30,17 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	float TakeDamage(float DamageAmount, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser) override;
+
 	UFUNCTION(BlueprintPure, Category=AI)
-	ETurretState GetCurrentState() const { return m_CurrentState;}
+	FORCEINLINE ETurretState GetCurrentState() const { return m_CurrentState;}
+
+	UFUNCTION(BlueprintPure, Category = AI)
+	FORCEINLINE FVector GetPlayerDirection() const { return  m_PlayerDirection;}
+
+	UFUNCTION(BlueprintPure, Category = AI)
+	FORCEINLINE FVector GetPredictedPlayerDirection() const { return  m_PlayerPredictedDirection; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -41,19 +50,31 @@ protected:
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category =Mesh, meta = (AllowPrivateAccess = "true"))
-	class USkeletalMeshComponent* TurretMesh;
+	class USkeletalMeshComponent* m_TurretMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category =Particle, meta = (AllowPrivateAccess = "true"))
-	class USceneComponent* LaserTarget;
+	class USceneComponent* m_LaserTarget;
 
-	UPROPERTY(VisibleAnywhere, Category=AI, meta = (AllowPrivateAccess = "true"))
-	float m_ScanningSpeed;
+	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
+	class UParticleSystemComponent* m_LaserBeam;
+
+	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
+	class UParticleSystemComponent* m_RightGunMuzzle;
+
+	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
+	class UParticleSystemComponent* m_LeftGunMuzzle;
+
+	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
+	class UAudioComponent* m_GunSound;
+
+	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
+	class UAudioComponent* m_TurretVoice;
 
 	UPROPERTY(VisibleAnywhere, Category = AI, meta = (AllowPrivateAccess = "true"))
-	class UParticleSystemComponent* LaserBeam;
+	float m_ScanningSpeed;
 
-	UPROPERTY(EditDefaultsOnly, Category=Mesh)
-	FName m_LaserSocketName;
+	UPROPERTY(EditDefaultsOnly, Category = Shooting)
+	TSubclassOf<class ALaserProjectile> m_ProjectileClass;
 
 	UPROPERTY(EditDefaultsOnly, Category=AI)
 	float m_ActivationAngle;
@@ -66,6 +87,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Shooting)
 	float m_ShotDamage;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Shooting)
+	float m_ShootingSpeed;
 
 
 
@@ -76,15 +100,21 @@ private:
 
 	ETurretState m_CurrentState;
 
+	// Shooting -----------------------------------------------------------------
 	bool bPlayerInSight;
 	FVector m_PlayerDirection;
+	FVector m_PlayerPredictedDirection;
 	float m_LastShotTime;
 	void Shoot(float DeltaTime, bool bPlayerTakesDamage);
+	void SpawnProjectileAtPlayer(FVector SpawnLocation);
+	void UpdatePredictedPlayerDirection();
 
+	// AI ----------------------------------------------------------------------
 	void UpdatePlayerVariables();
-
 	void LaserScan();
 	void SetNewState(ETurretState NewState);
 	void UpdateAI(float DeltaTime);
 	bool Trace(FVector Start, FVector End, FHitResult& HitOut);
+
+
 };

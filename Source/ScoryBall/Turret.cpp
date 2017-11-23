@@ -2,6 +2,7 @@
 
 #include "Turret.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/AudioComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "Engine/CollisionProfile.h"
@@ -11,33 +12,56 @@
 
 const FName TraceTag("MyTraceTag");
 
+static const FName s_LaserSocketName = "head_socket";
+static const FName s_RightGunSocketName = "right_gun_socket";
+static const FName s_LeftGunSocketName = "left_gun_socket";
+
 // Sets default values
 ATurret::ATurret()
 {
 	bPlayerDetected = false;
 	m_ShotDamage = 5.0f;
-	m_LaserSocketName = "head_socket";
 	m_ActivationAngle = 60.0f;
 	m_ShootingCoolDown = 0.2f;
 	m_LaserRange = 1000.0f;
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	TurretMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("TurretMesh"));
-	RootComponent = TurretMesh;
-	TurretMesh->SetSimulatePhysics(true);
-	TurretMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
-	SetActorScale3D(FVector(4.0f));
+	m_TurretMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("TurretMesh"));
+	RootComponent = m_TurretMesh;
+	m_TurretMesh->SetSimulatePhysics(true);
+	m_TurretMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+	SetActorScale3D(FVector(1.0f));
 
-	LaserTarget = CreateDefaultSubobject<USceneComponent>(TEXT("LaserTarget"));
-	LaserTarget->SetupAttachment(TurretMesh);
+	m_LaserTarget = CreateDefaultSubobject<USceneComponent>(TEXT("LaserTarget"));
+	m_LaserTarget->SetupAttachment(m_TurretMesh);
 
-	LaserBeam = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("LaserBeam"));
-	LaserBeam->SetupAttachment(TurretMesh, m_LaserSocketName);
-	LaserBeam->SetWorldScale3D(FVector(1));
+	m_LaserBeam = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("LaserBeam"));
+	m_LaserBeam->SetupAttachment(m_TurretMesh, s_LaserSocketName);
+	m_LaserBeam->SetWorldScale3D(FVector(1));
+
+	m_RightGunMuzzle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("RightGunMuzzle"));
+	m_RightGunMuzzle->SetupAttachment(m_TurretMesh, s_RightGunSocketName);
+	m_RightGunMuzzle->SetWorldScale3D(FVector(.1f));
+	m_RightGunMuzzle->SetAutoActivate(false);
+
+	m_LeftGunMuzzle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("LeftGunMuzzle"));
+	m_LeftGunMuzzle->SetupAttachment(m_TurretMesh, s_LeftGunSocketName);
+	m_LeftGunMuzzle->SetWorldScale3D(FVector(.1f));
+	m_LeftGunMuzzle->SetAutoActivate(false);
+
+	m_GunSound = CreateDefaultSubobject<UAudioComponent>(TEXT("Gun Sound"));
+	m_GunSound->SetupAttachment(m_TurretMesh, s_LaserSocketName);
+	m_GunSound->SetAutoActivate(false);
+
+	m_TurretVoice = CreateDefaultSubobject<UAudioComponent>(TEXT("TurretVoice"));
+	m_TurretVoice->SetupAttachment(m_TurretMesh, s_LaserSocketName);
+	m_TurretVoice->SetAutoActivate(false);
+
 	//LaserBeam->SetRelativeLocation(LaserBeam->GetSocketLocation("head_socket"));
 
 	m_CurrentState = ETurretState::InActive;
+	m_ShootingSpeed = 1000.0f;
 }
 
 // Called when the game starts or when spawned
@@ -63,6 +87,11 @@ void ATurret::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
+float ATurret::TakeDamage(float DamageAmount, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
+{
+	return 0.0;
+}
+
 void ATurret::Shoot(float DeltaTime, bool bPlayerTakesDamage)
 {
 	m_LastShotTime += DeltaTime;
@@ -71,9 +100,34 @@ void ATurret::Shoot(float DeltaTime, bool bPlayerTakesDamage)
 		if (bPlayerTakesDamage)
 			m_Player->TakeDamage(m_ShotDamage, FDamageEvent(), NULL, this);
 		// Adding Shooting FX here
+		m_RightGunMuzzle->ActivateSystem(true);
+		//LeftGunMuzzle->ActivateSystem(true);
+
+
+
+		SpawnProjectileAtPlayer(m_TurretMesh->GetSocketLocation(s_RightGunSocketName));
 
 		m_LastShotTime = 0;
 	}
+}
+
+void ATurret::SpawnProjectileAtPlayer(FVector SpawnLocation)
+{
+	UWorld* const World = GetWorld();
+	if (World)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = Instigator;
+
+
+	}
+}
+
+void ATurret::UpdatePredictedPlayerDirection()
+{
+	// Todo do you implementation here
+	m_PlayerPredictedDirection = m_PlayerDirection;
 }
 
 void ATurret::UpdatePlayerVariables()
@@ -81,10 +135,10 @@ void ATurret::UpdatePlayerVariables()
 	// Reset the variable to false
 	bPlayerInSight = false;
 
-	// Get Player Direction with respect to the socket of the torret
+	// Get Player Direction with respect to the socket of the turret
 	const FVector PlayerLocation = m_Player->GetActorLocation();
-	FTransform SockTrans = TurretMesh->GetSocketTransform(m_LaserSocketName);
-	m_PlayerDirection = SockTrans.InverseTransformPosition(PlayerLocation);
+	FTransform SockTrans = m_TurretMesh->GetSocketTransform(s_LaserSocketName);
+	m_PlayerDirection = SockTrans.InverseTransformPosition(PlayerLocation).GetSafeNormal();
 
 	// Get the angle of the direction
 	FRotator PlayerAngle = m_PlayerDirection.Rotation();
@@ -98,13 +152,12 @@ void ATurret::UpdatePlayerVariables()
 			bPlayerInSight = true;
 		}
 	}
-
 }
 
 void ATurret::LaserScan()
 {
 	// Start Point
-	FVector StartPoint = TurretMesh->GetSocketLocation(m_LaserSocketName);
+	FVector StartPoint = m_TurretMesh->GetSocketLocation(s_LaserSocketName);
 	// Laser Direction
 	FVector LaserDirection;
 	if (bPlayerDetected)
@@ -113,7 +166,7 @@ void ATurret::LaserScan()
 	}
 	else
 	{
-		LaserDirection = LaserTarget->GetComponentLocation() - StartPoint;
+		LaserDirection = m_LaserTarget->GetComponentLocation() - StartPoint;
 	}
 	// End Point
 	FVector EndPoint = StartPoint + LaserDirection * m_LaserRange;
@@ -128,12 +181,12 @@ void ATurret::LaserScan()
 
 	if (HitOut.bBlockingHit)
 	{
-		LaserBeam->SetBeamTargetPoint(0, HitOut.ImpactPoint, 0);
+		m_LaserBeam->SetBeamTargetPoint(0, HitOut.ImpactPoint, 0);
 		m_DetectedActor = HitOut.GetActor();
 	}
 	else
 	{
-		LaserBeam->SetBeamTargetPoint(0, EndPoint, 0);
+		m_LaserBeam->SetBeamTargetPoint(0, EndPoint, 0);
 		m_DetectedActor = NULL;
 	}
 }
@@ -164,7 +217,7 @@ void ATurret::SetNewState(ETurretState NewState)
 			AnimateLaserTarget(false);
 			m_LastShotTime = 0;
 			m_CurrentState = NewState;
-
+			//GunSound->Activate(true);
 		}
 		break;
 		default:
@@ -203,6 +256,7 @@ void ATurret::UpdateAI(float DeltaTime)
 			if (!bPlayerInSight)
 			{
 				SetNewState(ETurretState::InActive);
+				//GunSound->Deactivate();
 			}
 			else
 			{
