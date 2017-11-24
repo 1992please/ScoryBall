@@ -152,7 +152,7 @@ void ATurret::SpawnProjectileAtLocation(FVector SpawnLocation)
 void ATurret::UpdatePredictedPlayerDirection()
 {
 	// We will get the new location only according the right gun and use that for left gun
-	const FVector DirectionOfTarget = m_Player->GetActorLocation() - TurretMesh->GetSocketLocation(bRightGunTurn?s_RightGunSocketName:s_LeftGunSocketName);
+	const FVector DirectionOfTarget = m_Player->GetActorLocation() - TurretMesh->GetSocketLocation(bRightGunTurn ? s_RightGunSocketName : s_LeftGunSocketName);
 	const FVector TargetVelocity = m_Player->GetVelocity();
 	const float ShootingSpeed = m_BulletSpeed;
 	// Get the parameters of the quadratic equation to solve
@@ -189,7 +189,7 @@ float ATurret::GetBestQuadraticSolution(const float a, const float b, const floa
 
 void ATurret::UpdatePlayerVariables()
 {
-	if(!m_Player)
+	if (!m_Player)
 		return;
 	// Reset the variable to false
 	bPlayerInSight = false;

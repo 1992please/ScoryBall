@@ -6,5 +6,6 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogBall, All, All); 
 DECLARE_LOG_CATEGORY_EXTERN(LogTurret, All, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogLevelBuilding, All, All);
 #define ECC_Projectile ECC_GameTraceChannel1
 #define ECC_Turret ECC_GameTraceChannel2
