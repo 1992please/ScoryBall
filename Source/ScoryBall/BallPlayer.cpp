@@ -23,7 +23,9 @@ ABallPlayer::ABallPlayer()
 	BallMesh->SetLinearDamping(0.5f);
 	BallMesh->SetAngularDamping(0.1f);
 	BallMesh->SetWorldScale3D(FVector(0.25f));
-
+	BallMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	BallMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	BallMesh->SetCollisionResponseToChannel(ECC_Projectile, ECR_Overlap);
 	//SphereTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere Trigger"));
 	//SphereTrigger->SetupAttachment(BallMesh);
 	//SphereTrigger->SetCollisionProfileName("OverlapAll");

@@ -18,11 +18,13 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void SetProjectileSpeed(float Speed);
-
+	void SetProjectileInitialSpeed(float Speed);
+	void SetProjectileInitialVelocity(FVector Velocity);
+	void SetDamage(float Damage);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit);
 
 private:
 	// Laser Projectile
@@ -36,4 +38,5 @@ private:
 	float m_LifeTime;
 
 	float m_LifeTimeCounter;
+	float m_Damage;
 };

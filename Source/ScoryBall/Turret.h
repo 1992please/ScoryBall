@@ -36,10 +36,15 @@ public:
 	FORCEINLINE ETurretState GetCurrentState() const { return m_CurrentState;}
 
 	UFUNCTION(BlueprintPure, Category = AI)
-	FORCEINLINE FVector GetPlayerDirection() const { return  m_PlayerDirection;}
+	FORCEINLINE FVector GetPlayerLocation() const { return  m_Player->GetActorLocation();}
 
+	/** Get player predicted direction in perspective to the turret laser socket */
 	UFUNCTION(BlueprintPure, Category = AI)
-	FORCEINLINE FVector GetPredictedPlayerDirection() const { return  m_PlayerPredictedDirection; }
+	FVector GetPlayerPredictedLocalDirection() const;
+
+
+	//UFUNCTION(BlueprintPure, Category = AI)
+	//FVector GetPredictedPlayerDirection() const;
 
 protected:
 	// Called when the game starts or when spawned
@@ -50,28 +55,25 @@ protected:
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category =Mesh, meta = (AllowPrivateAccess = "true"))
-	class USkeletalMeshComponent* m_TurretMesh;
+	class USkeletalMeshComponent* TurretMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category =Particle, meta = (AllowPrivateAccess = "true"))
-	class USceneComponent* m_LaserTarget;
+	class USceneComponent* LaserTarget;
 
 	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
-	class UParticleSystemComponent* m_LaserBeam;
+	class UParticleSystemComponent* LaserBeam;
 
 	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
-	class UParticleSystemComponent* m_RightGunMuzzle;
+	class UParticleSystemComponent* RightGunMuzzle;
 
 	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
-	class UParticleSystemComponent* m_LeftGunMuzzle;
+	class UParticleSystemComponent* LeftGunMuzzle;
 
 	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
-	class UAudioComponent* m_GunSound;
+	class UAudioComponent* GunSound;
 
 	UPROPERTY(VisibleAnywhere, Category = FX, meta = (AllowPrivateAccess = "true"))
-	class UAudioComponent* m_TurretVoice;
-
-	UPROPERTY(VisibleAnywhere, Category = AI, meta = (AllowPrivateAccess = "true"))
-	float m_ScanningSpeed;
+	class UAudioComponent* TurretVoice;
 
 	UPROPERTY(EditDefaultsOnly, Category = Shooting)
 	TSubclassOf<class ALaserProjectile> m_ProjectileClass;
@@ -87,9 +89,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Shooting)
 	float m_ShotDamage;
-	
+	/** the projectile movement speed */
 	UPROPERTY(EditDefaultsOnly, Category = Shooting)
-	float m_ShootingSpeed;
+	float m_BulletSpeed;
 
 
 
@@ -102,11 +104,11 @@ private:
 
 	// Shooting -----------------------------------------------------------------
 	bool bPlayerInSight;
-	FVector m_PlayerDirection;
-	FVector m_PlayerPredictedDirection;
+	FVector m_PlayerPredictedLocation;
 	float m_LastShotTime;
-	void Shoot(float DeltaTime, bool bPlayerTakesDamage);
-	void SpawnProjectileAtPlayer(FVector SpawnLocation);
+	bool bRightGunTurn;
+	void Shoot(float DeltaTime);
+	void SpawnProjectileAtLocation(FVector SpawnLocation);
 	void UpdatePredictedPlayerDirection();
 
 	// AI ----------------------------------------------------------------------
@@ -116,5 +118,6 @@ private:
 	void UpdateAI(float DeltaTime);
 	bool Trace(FVector Start, FVector End, FHitResult& HitOut);
 
-
+	// some math statics
+	static float GetBestQuadraticSolution(const float a, const float b, const float c);
 };
