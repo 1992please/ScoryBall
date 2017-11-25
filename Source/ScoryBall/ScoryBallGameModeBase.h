@@ -16,7 +16,9 @@ public:
 	AScoryBallGameModeBase();
 
 	virtual void PreInitializeComponents() override;
+	virtual void Tick(float DeltaSeconds) override;
 
+	void BatteryPickedUp(int32 X, int32 Y);
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Map Initialization")
 	bool bInitializeMapFromFile;
@@ -34,16 +36,21 @@ private:
 	TSubclassOf<class ABattery> BatteryClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Map Initialization", meta = (EditCondition = "bInitializeMapFromFile"))
-	float CellSize;
+	float m_CellSize;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Map Initialization", meta = (EditCondition = "bInitializeMapFromFile"))
+	float m_SpawningBatteriesInterval;
 
 	FORCEINLINE bool ReadTextFromFile(const FString& FilePath, FString& Text);
 	
 	FORCEINLINE void FillBoard(const FString InText);
-	// TODO add forceinline tag
+
 	FORCEINLINE void SpawnBoard();
 
-	FORCEINLINE void SpawnElement(UClass* Class, int32 RowNum, int32 ColNum, int32 Level);
+	FORCEINLINE AActor* SpawnElement(UClass* Class, int32 RowNum, int32 ColNum, int32 Level);
 
+	void SpawnBatteries();
 
 	struct FBoard* m_Board;
+	float m_SpawnBatteriesTimer;
 };

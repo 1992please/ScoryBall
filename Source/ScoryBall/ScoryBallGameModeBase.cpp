@@ -9,32 +9,61 @@
 #include "FileHelper.h"
 #include "Board.h"
 #include "Turret.h"
+#include "Kismet/KismetArrayLibrary.h"
+#include "Battery.h"
 
 AScoryBallGameModeBase::AScoryBallGameModeBase()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	bInitializeMapFromFile = false;
 	FilePath = "level_data/map_data.dat";
 	m_Board = new FBoard();
+	m_CellSize = 100.0f;
+	m_SpawningBatteriesInterval = 10.0f;
+	m_SpawnBatteriesTimer = 0.0f;
 }
 
 void AScoryBallGameModeBase::PreInitializeComponents()
 {
-	if (!bInitializeMapFromFile)
-		return;
-
-	FString Data;
-	if (ReadTextFromFile(FilePath, Data))
+	if (bInitializeMapFromFile)
 	{
-		UE_LOG(LogLevelBuilding, Log, TEXT("Data Read Successful: %s"), *Data);
-		FillBoard(Data);
-		SpawnBoard();
-	}
-	else
-	{
-		UE_LOG(LogLevelBuilding, Error, TEXT("Couldn't Find File at location: %s"), *FilePath);
-	}
 
+		FString Data;
+		if (ReadTextFromFile(FilePath, Data))
+		{
+			UE_LOG(LogLevelBuilding, Log, TEXT("Data Read Successful: %s"), *Data);
+			FillBoard(Data);
+			SpawnBoard();
+		}
+		else
+		{
+			UE_LOG(LogLevelBuilding, Error, TEXT("Couldn't Find File at location: %s"), *FilePath);
+		}
+	}
 	AGameModeBase::PreInitializeComponents();
+}
+
+void AScoryBallGameModeBase::Tick(float DeltaSeconds)
+{
+	if (bInitializeMapFromFile)
+	{
+		m_SpawnBatteriesTimer += DeltaSeconds;
+		if (m_SpawnBatteriesTimer > m_SpawningBatteriesInterval)
+		{
+			m_SpawnBatteriesTimer = 0.0f;
+			SpawnBatteries();
+		}
+
+	}
+}
+
+void AScoryBallGameModeBase::BatteryPickedUp(int32 X, int32 Y)
+{
+	if (m_Board && m_Board->m_RowSize > 0)
+	{
+		(*m_Board)[X][Y].level1 = ECellType::Nothing;
+	}
 }
 
 FORCEINLINE void AScoryBallGameModeBase::FillBoard(const FString InText)
@@ -91,7 +120,7 @@ FORCEINLINE void AScoryBallGameModeBase::FillBoard(const FString InText)
 
 FORCEINLINE void AScoryBallGameModeBase::SpawnBoard()
 {
-	if(!TurretClass || !GroundCell)
+	if (!TurretClass || !GroundCell)
 		return;
 
 	for (int RowIndex = 0; RowIndex < m_Board->m_RowSize; RowIndex++)
@@ -120,11 +149,13 @@ FORCEINLINE void AScoryBallGameModeBase::SpawnBoard()
 			}
 		}
 	}
+
+	SpawnBatteries();
 }
 
-FORCEINLINE void AScoryBallGameModeBase::SpawnElement(UClass* Class, int32 RowNum, int32 ColNum, int32 Level)
+FORCEINLINE AActor* AScoryBallGameModeBase::SpawnElement(UClass* Class, int32 RowNum, int32 ColNum, int32 Level)
 {
-	FVector SpawnLocation(RowNum * CellSize, ColNum * CellSize, Level * CellSize);
+	FVector SpawnLocation(RowNum * m_CellSize, ColNum * m_CellSize, Level * m_CellSize);
 
 	UWorld* const World = GetWorld();
 	if (World)
@@ -139,11 +170,47 @@ FORCEINLINE void AScoryBallGameModeBase::SpawnElement(UClass* Class, int32 RowNu
 
 		if (Class != NULL)
 		{
-			World->SpawnActor<AActor>(
+			return World->SpawnActor<AActor>(
 				Class,
 				CellTransform,
 				SpawnParams);
 		}
+	}
+	return NULL;
+}
+
+void AScoryBallGameModeBase::SpawnBatteries()
+{
+	TArray<FBoardCoords> BoardCoords;
+	m_Board->GetEmptyCellCoords(BoardCoords);
+	if (BoardCoords.Num() > 5)
+	{
+		// Shuffle the array
+		const int32 LastIndex = BoardCoords.Num() - 1;
+		for (int32 i = 0; i <= LastIndex; ++i)
+		{
+			int32 Index = FMath::RandRange(0, LastIndex);
+			if (i != Index)
+			{
+				FBoardCoords temp = BoardCoords[i];
+				BoardCoords[i] = BoardCoords[Index];
+				BoardCoords[Index] = temp;
+			}
+		}
+
+		// Pick first 3 locations
+		for (int i = 0; i < 3; i++)
+		{
+			ABattery* Battery =Cast<ABattery>(SpawnElement(BatteryClass, BoardCoords[i].X, BoardCoords[i].Y, 1));
+			if (Battery)
+			{
+				Battery->X = BoardCoords[i].X;
+				Battery->Y = BoardCoords[i].Y;
+
+				(*m_Board)[Battery->X][Battery->Y].level1 = ECellType::Battery;
+			}
+		}
+
 	}
 }
 

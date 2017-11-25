@@ -20,12 +20,18 @@ public:
 
 	void PickUp();
 
+	int32 X;
+	int32 Y;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* Mesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UBoxComponent* Box;
 };

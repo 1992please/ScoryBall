@@ -162,7 +162,7 @@ void ATurret::UpdatePredictedPlayerDirection()
 
 	float TimeToReachTarget = GetBestQuadraticSolution(A, B, C);
 	m_PlayerPredictedLocation = m_Player->GetActorLocation() + TargetVelocity * TimeToReachTarget;
-	DrawDebugSphere(GetWorld(), m_PlayerPredictedLocation, 20, 32, FColor::Red);
+	//DrawDebugSphere(GetWorld(), m_PlayerPredictedLocation, 20, 32, FColor::Red);
 
 }
 

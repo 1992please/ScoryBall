@@ -6,7 +6,15 @@ enum class ECellType : uint8
 {
 	Nothing = 0,
 	Block = 1,
-	Turret= 2
+	Turret = 2,
+	Battery = 3
+};
+
+struct FBoardCoords
+{
+	int32 X;
+	int32 Y;
+	FBoardCoords(int32 x, int32 y) : X(x), Y(y) {}
 };
 
 struct FCell
@@ -52,5 +60,32 @@ struct FBoard
 	FORCEINLINE FRow& operator[](const int32 Index)
 	{
 		return m_Rows[Index];
+	}
+
+	void GetEmptyCellCoords(TArray<FBoardCoords>& BoardCoords)
+	{
+		BoardCoords.Empty();
+		for (int i = 0; i < m_RowSize; i++)
+		{
+			for (int j = 0; j < m_ColSize; j++)
+			{
+				if (m_Rows[i][j].level1 == ECellType::Nothing)
+					BoardCoords.Add(FBoardCoords(i, j));
+			}
+		}
+	}
+
+	int32 GetNoOfEmptyCells()
+	{
+		int32 NEmptyCells = 0;
+		for (int i = 0; i < m_RowSize; i++)
+		{
+			for (int j = 0; j < m_ColSize; j++)
+			{
+				if (m_Rows[i][j].level1 == ECellType::Nothing)
+					NEmptyCells++;
+			}
+		}
+		return NEmptyCells;
 	}
 };
